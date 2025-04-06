@@ -13,8 +13,9 @@ public abstract class AbstractDecoratorObserver<T> implements Observer<T> {
     protected volatile boolean done = false;
     protected Logger log;
 
-    public AbstractDecoratorObserver(Disposable disposable) {
+    public AbstractDecoratorObserver(Disposable disposable,Logger log) {
         this.disposable = disposable;
+        this.log = log;
     }
 
     @Override

@@ -52,9 +52,11 @@
 - Основной метод — `execute(Runnable task)`, который запускает задачу в соответствующем потоке.
 
 **`SchedulerTreadFactory`**:
-- создает демон-потоки
-- Устанавливает потокам имена(`ComputationScheduler` - "Computationscheduler-worker-threadNumber", `IOThreadScheduler` - "IO-scheduler-worker-threadNumber", `SingleThreadScheduler` - "SingleThread-scheduler-worker-threadNumber" )
 
+- создает демон-потоки
+- Устанавливает потокам имена(`ComputationScheduler` - "Computationscheduler-worker-threadNumber",
+  `IOThreadScheduler` - "IO-scheduler-worker-threadNumber", `SingleThreadScheduler` - "
+  SingleThread-scheduler-worker-threadNumber" )
 
 ### Типы Schedulers:
 
@@ -115,16 +117,19 @@
 5. Отписка и управление ресурсами.
 
 ## Примеры использования библиотеки
+
 ## ⚠️ Важное предупреждение
 
 **Важно отписывать неиспользуемые Observer от Observable** для избежания утечек памяти!
 
 ### Почему это критично:
+
 - 🚨 Неотписанные Observer могут продолжать получать события
 - 💾 Удерживают ссылки на объекты в памяти
 - 📈 Могут привести к постепенному росту потребления памяти
 
 ### Как правильно:
+
 ```java
 // При создание Observable сохраняем на него ссылку
 Observable<String> observable = Observable.create(emitter);
@@ -138,96 +143,130 @@ observable.unsubscribe(observer);
 
 ```java
 Observable<String> observable = Observable.create(emitter -> {
-  emitter.onNext("Hello");
-  emitter.onNext("World");
-  emitter.onComplete();
+    emitter.onNext("Hello");
+    emitter.onNext("World");
+    emitter.onComplete();
 });
 Observer<String> observer = new Observer<>() {
-  @Override
-  public void onNext(String item) {
-    System.out.println(item);
-  }
+    @Override
+    public void onNext(String item) {
+        System.out.println(item);
+    }
 
-  @Override
-  public void onError(Throwable t) {
-    System.out.println(t.getMessage());
-  }
+    @Override
+    public void onError(Throwable t) {
+        System.out.println(t.getMessage());
+    }
 
-  @Override
-  public void onComplete() {
-    System.out.println("Completed");
-  }
+    @Override
+    public void onComplete() {
+        System.out.println("Completed");
+    }
 };
 // Подписка observer на observable
 observable.subscribe(observer);
 // Когда подписка больше не нужна:
 observable.unsubscribe(observer);
 ```
+
+### Создание observer c автоматической отпиской от Observable при onError, onComplete:
+
+```java
+Observable<String> observable = Observable.create(emitter -> {
+    emitter.onNext("Hello");
+    emitter.onNext("World");
+    emitter.onComplete();
+});
+observable.subscribe(new Observer<>() {
+  @Override
+  public void onNext(String item) {
+    System.out.println(item);
+  }
+  
+  @Override
+  public void onError(Throwable t) {
+    System.out.println(t.getMessage());
+    observable.unsubscribe(this);
+  }
+  
+  @Override
+  public void onComplete() {
+    System.out.println("Completed");
+    observable.unsubscribe(this);
+  }
+});
+
+```
+
 ### Цепочка операторов:
+
 ```java
 Observable<String> observable = Observable.<String>create(emitter -> {
-          emitter.onNext("Hello");
-          emitter.onNext("World");
-          emitter.onComplete();
+            emitter.onNext("Hello");
+            emitter.onNext("World");
+            emitter.onComplete();
         })
         .filter(str -> str.startsWith("H"))
         .map(str -> str.substring(2));
 Observer<String> observer = new Observer<>() {
-  @Override
-  public void onNext(String item) {
-    System.out.println(item);
-  }
+    @Override
+    public void onNext(String item) {
+        System.out.println(item);
+    }
 
-  @Override
-  public void onError(Throwable t) {
-    System.out.println(t.getMessage());
-  }
+    @Override
+    public void onError(Throwable t) {
+        System.out.println(t.getMessage());
+    }
 
-  @Override
-  public void onComplete() {
-    System.out.println("Completed");
-  }
+    @Override
+    public void onComplete() {
+        System.out.println("Completed");
+    }
 };
 // Подписка observer на observable
 observable.subscribe(observer);
 // Когда подписка больше не нужна:
 observable.unsubscribe(observer);
 ```
+
 ### Многопоточность:
+
 ```java
 Observable<String> observable = Observable.<String>create(emitter -> {
-    emitter.onNext("Hello");
-    emitter.onNext("World");
-    emitter.onComplete();
-  })
-  .subscribeOn(new IOScheduler())
-  .filter(str -> str.startsWith("H"))
-  .observeOn(new ComputationScheduler(4))
-  .map(str -> str.substring(2));
+            emitter.onNext("Hello");
+            emitter.onNext("World");
+            emitter.onComplete();
+        })
+        .subscribeOn(new IOScheduler())
+        .filter(str -> str.startsWith("H"))
+        .observeOn(new ComputationScheduler(4))
+        .map(str -> str.substring(2));
 Observer<String> observer = new Observer<>() {
-  @Override
-  public void onNext(String item) {
-  System.out.println(item);
-  }
+    @Override
+    public void onNext(String item) {
+        System.out.println(item);
+    }
 
-  @Override
-  public void onError(Throwable t) {
-  System.out.println(t.getMessage());
-  }
+    @Override
+    public void onError(Throwable t) {
+        System.out.println(t.getMessage());
+    }
 
-  @Override
-  public void onComplete() {
-  System.out.println("Completed");
-  }
+    @Override
+    public void onComplete() {
+        System.out.println("Completed");
+    }
 };
 // Подписка observer на observable
 observable.subscribe(observer);
 Thread.sleep(500);
 // Когда подписка больше не нужна:
 observable.unsubscribe(observer);
-    
 ```
+
 ### FlatMap:
+
 ```java
 Observable<String> observable = Observable.<String>create(emitter -> {
             emitter.onNext("Hello");
@@ -265,27 +304,31 @@ Thread.sleep(500);
 // Когда подписка больше не нужна:
 observable.unsubscribe(observer);
 ```
+
 # Заключение
 
 Реализованная система предоставляет:
 
 ## Основные возможности
+
 - ✅ **Гибкий инструмент** для работы с асинхронными потоками данных
 - ✅ Поддержку **основных операторов**:
-  - `map` - преобразование элементов
-  - `filter` - фильтрация элементов
-  - `flatMap` - преобразование с раскрытием вложенных потоков
+    - `map` - преобразование элементов
+    - `filter` - фильтрация элементов
+    - `flatMap` - преобразование с раскрытием вложенных потоков
 - ✅ **Управление многопоточностью** через Schedulers:
-  - `subscribeOn` - задает поток для выполнения источника
-  - `observeOn` - задает поток для получения данных
+    - `subscribeOn` - задает поток для выполнения источника
+    - `observeOn` - задает поток для получения данных
 - ✅ **Механизм отписки observer от observable**:
-  - Функция `unsubscribe()` у `Observable`
-  - Автоматическая очистка ресурсов
+    - Функция `unsubscribe()` у `Observable`
+    - Автоматическая очистка ресурсов
 
 ## Ключевые рекомендации по использованию
 
 ### Управление ресурсами
+
 🔹 **Всегда сохраняйте ссылку на observable и observer** для возможности отписаться и освободить ресурсы:
+
 ```java
 // Подписка observer на observable
 observable.subscribe(observer);

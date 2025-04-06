@@ -10,10 +10,9 @@ public class MapObserver<T, R> extends AbstractDecoratorObserver<T> {
     private final Observer<? super R> downstream;
 
     public MapObserver(Disposable disposable, Observer<? super R> downstream, Function<? super T, ? extends R> mapper) {
-        super(disposable);
+        super(disposable, LoggerFactory.getLogger(MapObserver.class));
         this.downstream = downstream;
         this.mapper = mapper;
-        this.log = LoggerFactory.getLogger(MapObserver.class);
     }
 
     @Override

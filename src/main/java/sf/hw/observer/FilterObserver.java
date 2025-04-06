@@ -10,10 +10,9 @@ public class FilterObserver<T> extends AbstractDecoratorObserver<T> {
     private final Observer<? super T> downstream;
 
     public FilterObserver(Disposable disposable,Observer<? super T> downstream, Predicate<? super T> filter) {
-        super(disposable);
+        super(disposable,LoggerFactory.getLogger(FilterObserver.class));
         this.downstream = downstream;
         this.filter = filter;
-        this.log = LoggerFactory.getLogger(FilterObserver.class);
     }
 
 

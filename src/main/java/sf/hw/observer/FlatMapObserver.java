@@ -15,11 +15,10 @@ public class FlatMapObserver<T, R> extends AbstractDecoratorObserver<T> {
     public FlatMapObserver(Disposable disposable, Observer<? super R> downstream,
                            Function<? super T, ? extends Observable<? extends R>> mapper,
                            Map<Observer<?>, Disposable> disposableMap) {
-        super(disposable);
+        super(disposable,LoggerFactory.getLogger(FlatMapObserver.class));
         this.downstream = downstream;
         this.mapper = mapper;
         this.disposableMap = disposableMap;
-        this.log = LoggerFactory.getLogger(FlatMapObserver.class);
     }
 
     @Override
@@ -44,9 +43,22 @@ public class FlatMapObserver<T, R> extends AbstractDecoratorObserver<T> {
         downstream.onComplete();
     }
 
-    static class StandardObserverDoNothingOnComplete<R> extends StandardObserver<R> {
+    static class StandardObserverDoNothingOnComplete<R> extends AbstractDecoratorObserver<R> {
+        private final Observer<? super R> downstream;
+
         public StandardObserverDoNothingOnComplete(Disposable disposable, Observer<? super R> downstream) {
-            super(disposable, downstream);
+            super(disposable,LoggerFactory.getLogger(StandardObserverDoNothingOnComplete.class));
+            this.downstream = downstream;
+        }
+
+        @Override
+        protected void actionsAtOnNext(R item) {
+            downstream.onNext(item);
+        }
+
+        @Override
+        protected void actionsAtOnError(Throwable t) {
+            downstream.onError(t);
         }
 
         @Override

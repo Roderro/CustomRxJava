@@ -14,7 +14,6 @@ public final class ObservableStandard<T> extends Observable<T> {
         this.source = source;
     }
 
-
     @Override
     public void subscribeActual(Observer<? super T> observer) {
         Disposable disposable = getDisposable(observer);
@@ -26,4 +25,5 @@ public final class ObservableStandard<T> extends Observable<T> {
             standardObserver.onError(ex);
         }
     }
+
 }

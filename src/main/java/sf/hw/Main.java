@@ -1,10 +1,7 @@
 package sf.hw;
 
-
 import sf.hw.observable.Observable;
 import sf.hw.observer.Observer;
-import sf.hw.scheduler.ComputationScheduler;
-import sf.hw.scheduler.IOScheduler;
 
 
 public class Main {
@@ -14,7 +11,7 @@ public class Main {
             emitter.onNext("World");
             emitter.onComplete();
         });
-        Observer<String> observer = new Observer<>() {
+        observable.subscribe(new Observer<>() {
             @Override
             public void onNext(String item) {
                 System.out.println(item);
@@ -23,17 +20,17 @@ public class Main {
             @Override
             public void onError(Throwable t) {
                 System.out.println(t.getMessage());
+                observable.unsubscribe(this);
             }
 
             @Override
             public void onComplete() {
                 System.out.println("Completed");
+                observable.unsubscribe(this);
             }
-        };
-// Подписка observer на observable
-        observable.subscribe(observer);
-// Когда подписка больше не нужна:
-        observable.unsubscribe(observer);
+        });
+        // Когда подписка больше не нужна:
+        System.out.println(observable.getDisposables().size());
     }
 }
 

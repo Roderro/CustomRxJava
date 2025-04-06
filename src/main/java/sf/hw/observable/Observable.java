@@ -17,7 +17,6 @@ public abstract class Observable<T> {
         this.disposableMap = disposableMap;
     }
 
-
     public static <T> Observable<T> create(Emitting<T> source) {
         return new ObservableStandard<>(source);
     }
@@ -50,10 +49,6 @@ public abstract class Observable<T> {
         subscribeActual(observer);
     }
 
-    protected void subscribeWithDisposable(Observer<? super T> observer, Disposable disposable) {
-        chainDisposable(disposable, observer);
-        subscribeActual(observer);
-    }
 
     public void unsubscribe(Observer<? super T> observer) {
         if (disposableMap.containsKey(observer)) {
@@ -84,4 +79,6 @@ public abstract class Observable<T> {
     protected void delAllObservers(Disposable targetDisposable) {
         disposableMap.entrySet().removeIf(entry -> targetDisposable.equals(entry.getValue()));
     }
+
+
 }

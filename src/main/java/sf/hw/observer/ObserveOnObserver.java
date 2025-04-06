@@ -17,10 +17,9 @@ public final class ObserveOnObserver<T> extends AbstractDecoratorObserver<T> imp
     Throwable error;
 
     public ObserveOnObserver(Disposable disposable, Observer<? super T> downstream, Scheduler schedule) {
-        super(disposable);
+        super(disposable, LoggerFactory.getLogger(ObserveOnObserver.class));
         this.downstream = downstream;
         this.schedule = schedule;
-        this.log = LoggerFactory.getLogger(ObserveOnObserver.class);
     }
 
 

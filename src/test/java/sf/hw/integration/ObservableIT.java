@@ -103,7 +103,10 @@ public class ObservableIT {
         // Assert
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertEquals(List.of(10, 20, 30), receivedItems);
+        // Проверка корректности очистки ресурсов
         observable.unsubscribe(observer);
+        assertTrue(observable.getDisposables().isEmpty(),
+                "Cleaning resources after the unsubscribing was not successful");
     }
 
     @Test
@@ -138,7 +141,10 @@ public class ObservableIT {
         // Assert
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertEquals(List.of("Value-20", "Value-30"), results);
+        // Проверка корректности очистки ресурсов
         observable.unsubscribe(observer);
+        assertTrue(observable.getDisposables().isEmpty(),
+                "Cleaning resources after the unsubscribing was not successful");
     }
 
 
@@ -163,7 +169,10 @@ public class ObservableIT {
         assertEquals(3, namesThreads.stream()
                         .filter(name -> name.startsWith("IO")).count(),
                 "Expected more than 1 different threads");
+        // Проверка корректности очистки ресурсов
         observable.unsubscribe(observer);
+        assertTrue(observable.getDisposables().isEmpty(),
+                "Cleaning resources after the unsubscribing was not successful");
     }
 
 
@@ -192,7 +201,10 @@ public class ObservableIT {
         assertEquals(1, namesThreads.stream()
                         .filter(name -> name.startsWith("SingleThread")).count(),
                 "The stage is made in the wrong thread");
+        // Проверка корректности очистки ресурсов
         observable.unsubscribe(observer);
+        assertTrue(observable.getDisposables().isEmpty(),
+                "Cleaning resources after the unsubscribing was not successful");
     }
 
 
@@ -222,7 +234,10 @@ public class ObservableIT {
         assertEquals(2, namesThreads.stream()
                         .filter(name -> name.startsWith("Computation")).count(),
                 "The stage is made in the wrong thread");
+        // Проверка корректности очистки ресурсов
         observable.unsubscribe(observer);
+        assertTrue(observable.getDisposables().isEmpty(),
+                "Cleaning resources after the unsubscribing was not successful");
     }
 
     @Test
@@ -259,6 +274,11 @@ public class ObservableIT {
         assertFalse(latch.await(300, TimeUnit.MILLISECONDS));
         assertEquals(0, observable.getDisposables().size());
         assertEquals(List.of(10, 20), receivedItems);
+
+        // Проверка корректности очистки ресурсов
+        observable.unsubscribe(observer);
+        assertTrue(observable.getDisposables().isEmpty(),
+                "Cleaning resources after the unsubscribing was not successful");
     }
 
 
@@ -299,6 +319,11 @@ public class ObservableIT {
         assertFalse(latch.await(300, TimeUnit.MILLISECONDS));
         assertEquals(0, observable.getDisposables().size());
         assertEquals(List.of(10, 15, 20, 25), receivedItems);
+
+        // Проверка корректности очистки ресурсов
+        observable.unsubscribe(observer);
+        assertTrue(observable.getDisposables().isEmpty(),
+                "Cleaning resources after the unsubscribing was not successful");
     }
 
 
@@ -340,12 +365,57 @@ public class ObservableIT {
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertEquals(List.of(1), receivedItems);
 
+        // Проверка корректности очистки ресурсов
         observable.unsubscribe(observer);
+        assertTrue(observable.getDisposables().isEmpty(),
+                "Cleaning resources after the unsubscribing was not successful");
     }
+
 
     @Test
     @DisplayName("FlatMap должен разворачивать вложенные Observable")
     void shouldFlattenObservables() throws InterruptedException {
+        // Arrange
+        List<String> results = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        Observer<String> observer = new Observer<>() {
+            @Override
+            public void onNext(String item) {
+                results.add(item);
+            }
+            @Override
+            public void onError(Throwable t) {
+                fail("Unexpected error");
+            }
+            @Override
+            public void onComplete() {
+                latch.countDown();
+            }
+        };
+
+        // Act
+        Observable<String> observable = Observable.create(emitter)
+                .subscribeOn(new ComputationScheduler(4))
+                .flatMap(x -> Observable.create(e -> {
+                    e.onNext("A" + x);
+                    e.onNext("B" + x);
+                    e.onComplete();
+                }));
+        observable.subscribe(observer);
+
+        // Assert
+        assertTrue(latch.await(1, TimeUnit.SECONDS));
+        assertEquals(6, results.size());
+        assertTrue(results.containsAll(List.of("A10", "B10", "A20", "B20", "A30", "B30")));
+        // Проверка корректности очистки ресурсов
+        observable.unsubscribe(observer);
+        assertTrue(observable.getDisposables().isEmpty(),
+                "Cleaning resources after the unsubscribing was not successful");
+    }
+
+    @Test
+    @DisplayName("FlatMap должен разворачивать вложенные Observable при использование SubscribeOn")
+    void shouldFlattenObservablesWhenSubscribeOn() throws InterruptedException {
         // Arrange
         List<String> results = new ArrayList<>();
         CountDownLatch latch = new CountDownLatch(1);
@@ -368,7 +438,8 @@ public class ObservableIT {
 
         // Act
         Observable<String> observable = Observable.create(emitter)
-                .<String>flatMap(x -> Observable.create(e -> {
+                .subscribeOn(new ComputationScheduler(4))
+                .flatMap(x -> Observable.create(e -> {
                     e.onNext("A" + x);
                     e.onNext("B" + x);
                     e.onComplete();
@@ -379,8 +450,55 @@ public class ObservableIT {
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertEquals(6, results.size());
         assertTrue(results.containsAll(List.of("A10", "B10", "A20", "B20", "A30", "B30")));
+        // Проверка корректности очистки ресурсов
         observable.unsubscribe(observer);
+        assertTrue(observable.getDisposables().isEmpty(),
+                "Cleaning resources after the unsubscribing was not successful");
     }
+
+    @Test
+    @DisplayName("FlatMap должен разворачивать вложенные Observable при использование ObserverOn")
+    void shouldFlattenObservablesWhenObserverOn() throws InterruptedException {
+        // Arrange
+        List<String> results = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        Observer<String> observer = new Observer<>() {
+            @Override
+            public void onNext(String item) {
+                results.add(item);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                fail("Unexpected error");
+            }
+
+            @Override
+            public void onComplete() {
+                latch.countDown();
+            }
+        };
+
+        // Act
+        Observable<String> observable = Observable.create(emitter)
+                .observeOn(new SingleThreadScheduler())
+                .flatMap(x -> Observable.create(e -> {
+                    e.onNext("A" + x);
+                    e.onNext("B" + x);
+                    e.onComplete();
+                }));
+        observable.subscribe(observer);
+
+        // Assert
+        assertTrue(latch.await(1, TimeUnit.SECONDS));
+        assertEquals(6, results.size());
+        assertTrue(results.containsAll(List.of("A10", "B10", "A20", "B20", "A30", "B30")));
+        // Проверка корректности очистки ресурсов
+        observable.unsubscribe(observer);
+        assertTrue(observable.getDisposables().isEmpty(),
+                "Cleaning resources after the unsubscribing was not successful");
+    }
+
 
     @Test
     @DisplayName("FlatMap обрабатывает ошибки во внутренних Observable")
@@ -421,7 +539,11 @@ public class ObservableIT {
 
         // Assert
         assertEquals(testError, receivedError.get(), "Должна быть получена тестовая ошибка");
+
+        // Проверка корректности очистки ресурсов
         observable.unsubscribe(testObserver);
+        assertTrue(observable.getDisposables().isEmpty(),
+                "Cleaning resources after the unsubscribing was not successful");
     }
 
     @Test
@@ -456,10 +578,14 @@ public class ObservableIT {
         // Assert
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertEquals(List.of(10, 20, 30, 10, 20, 30), receivedItems);
+
+        // Проверка корректности очистки ресурсов
         observable.unsubscribe(observer);
         observable2.unsubscribe(observer);
-        assertTrue(observable.getDisposables().isEmpty());
-        assertTrue(observable2.getDisposables().isEmpty());
+        assertTrue(observable.getDisposables().isEmpty(),
+                "Cleaning resources after the unsubscribing was not successful");
+        assertTrue(observable2.getDisposables().isEmpty(),
+                "Cleaning resources after the unsubscribing was not successful");
     }
 
     @Test
@@ -509,9 +635,12 @@ public class ObservableIT {
         // Assert
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertEquals(List.of(10, 20, 30, 11, 21, 31), receivedItems);
+
+        // Проверка корректности очистки ресурсов
         observable.unsubscribe(observer1);
         observable.unsubscribe(observer2);
-        assertTrue(observable.getDisposables().isEmpty());
+        assertTrue(observable.getDisposables().isEmpty(),
+                "Cleaning resources after the unsubscribing was not successful");
     }
 
 }
