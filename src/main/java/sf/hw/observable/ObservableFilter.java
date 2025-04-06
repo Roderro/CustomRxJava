@@ -11,6 +11,7 @@ public class ObservableFilter<T> extends Observable<T> {
     private final Observable<T> parent;
 
     protected ObservableFilter(Observable<T> parent, Predicate<? super T> filter) {
+        super(parent.getDisposables());
         this.parent = parent;
         this.filter = filter;
     }

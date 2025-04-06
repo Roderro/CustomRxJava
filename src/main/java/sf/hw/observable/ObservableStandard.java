@@ -1,13 +1,16 @@
 package sf.hw.observable;
 
 import sf.hw.observer.Disposable;
-import sf.hw.observer.StandardObserver;
 import sf.hw.observer.Observer;
+import sf.hw.observer.StandardObserver;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class ObservableStandard<T> extends Observable<T> {
     private final Emitting<T> source;
 
     ObservableStandard(Emitting<T> source) {
+        super(new ConcurrentHashMap<>());
         this.source = source;
     }
 

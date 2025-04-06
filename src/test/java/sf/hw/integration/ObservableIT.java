@@ -1,6 +1,5 @@
 package sf.hw.integration;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -35,13 +34,9 @@ public class ObservableIT {
         observer.onComplete();
     };
 
-    @AfterEach
-    void tearDown() {
-        Observable.getDisposables().clear();
-    }
 
     private Observable<Integer> getSaveNameThreadObservable(List<String> namesThreads, CountDownLatch latch) {
-        return Observable.<Integer>create(emitter -> {
+        return Observable.create(emitter -> {
             namesThreads.add(Thread.currentThread().getName());
             emitter.onNext(1);
             emitter.onComplete();
@@ -66,6 +61,14 @@ public class ObservableIT {
             public void onComplete() {
                 latch.countDown();
             }
+        };
+    }
+
+    private Function<Integer, Integer> getSaveNameThreadMapFun(List<String> namesThreads, CountDownLatch latch) {
+        return x -> {
+            namesThreads.add(Thread.currentThread().getName());
+            latch.countDown();
+            return x;
         };
     }
 
@@ -149,11 +152,7 @@ public class ObservableIT {
 
         // Act
         Observable<Integer> observable = getSaveNameThreadObservable(namesThreads, latch)
-                .map(x -> {
-                    namesThreads.add(Thread.currentThread().getName());
-                    latch.countDown();
-                    return x;
-                })
+                .map(getSaveNameThreadMapFun(namesThreads, latch))
                 .subscribeOn(scheduler);
         Observer<Integer> observer = getSaveNameThreadObserver(namesThreads, latch);
         observable.subscribe(observer);
@@ -178,11 +177,7 @@ public class ObservableIT {
 
         // Act
         Observable<Integer> observable = getSaveNameThreadObservable(namesThreads, latch)
-                .map(x -> {
-                    namesThreads.add(Thread.currentThread().getName());
-                    latch.countDown();
-                    return x;
-                })
+                .map(getSaveNameThreadMapFun(namesThreads, latch))
                 .observeOn(scheduler);
         Observer<Integer> observer = getSaveNameThreadObserver(namesThreads, latch);
 
@@ -210,16 +205,11 @@ public class ObservableIT {
         Scheduler subscribeScheduler = new IOScheduler();
         Scheduler observeScheduler = new ComputationScheduler(2);
 
-
         // Act
         Observable<Integer> observable = getSaveNameThreadObservable(namesThreads, latch)
                 .subscribeOn(subscribeScheduler)
                 .observeOn(observeScheduler)
-                .map(x -> {
-                    namesThreads.add(Thread.currentThread().getName());
-                    latch.countDown();
-                    return x;
-                });
+                .map(getSaveNameThreadMapFun(namesThreads, latch));
         Observer<Integer> observer = getSaveNameThreadObserver(namesThreads, latch);
         observable.subscribe(observer);
 
@@ -432,6 +422,96 @@ public class ObservableIT {
         // Assert
         assertEquals(testError, receivedError.get(), "Должна быть получена тестовая ошибка");
         observable.unsubscribe(testObserver);
+    }
+
+    @Test
+    @DisplayName("Обработка подписки и отписки на два Observable")
+    void twoObservableSubscription() throws InterruptedException {
+        // Arrange
+        List<Integer> receivedItems = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(2);
+        Observer<Integer> observer = new Observer<>() {
+            @Override
+            public void onNext(Integer item) {
+                receivedItems.add(item);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                fail("Unexpected error");
+            }
+
+            @Override
+            public void onComplete() {
+                latch.countDown();
+            }
+        };
+
+        // Act
+        Observable<Integer> observable = Observable.create(emitter);
+        Observable<Integer> observable2 = Observable.create(emitter);
+        observable.subscribe(observer);
+        observable2.subscribe(observer);
+
+        // Assert
+        assertTrue(latch.await(1, TimeUnit.SECONDS));
+        assertEquals(List.of(10, 20, 30, 10, 20, 30), receivedItems);
+        observable.unsubscribe(observer);
+        observable2.unsubscribe(observer);
+        assertTrue(observable.getDisposables().isEmpty());
+        assertTrue(observable2.getDisposables().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Обработка подписки и отписки двух observer на один Observable")
+    void twoObserverPerOneObservableSubscription() throws InterruptedException {
+        // Arrange
+        List<Integer> receivedItems = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(2);
+        Observer<Integer> observer1 = new Observer<>() {
+            @Override
+            public void onNext(Integer item) {
+                receivedItems.add(item);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                fail("Unexpected error");
+            }
+
+            @Override
+            public void onComplete() {
+                latch.countDown();
+            }
+        };
+        Observer<Integer> observer2 = new Observer<>() {
+            @Override
+            public void onNext(Integer item) {
+                receivedItems.add(item+1);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                fail("Unexpected error");
+            }
+
+            @Override
+            public void onComplete() {
+                latch.countDown();
+            }
+        };
+
+        // Act
+        Observable<Integer> observable = Observable.create(emitter);
+        observable.subscribe(observer1);
+        observable.subscribe(observer2);
+
+        // Assert
+        assertTrue(latch.await(1, TimeUnit.SECONDS));
+        assertEquals(List.of(10, 20, 30, 11, 21, 31), receivedItems);
+        observable.unsubscribe(observer1);
+        observable.unsubscribe(observer2);
+        assertTrue(observable.getDisposables().isEmpty());
     }
 
 }

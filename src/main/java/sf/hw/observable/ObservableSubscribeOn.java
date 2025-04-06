@@ -10,6 +10,7 @@ class ObservableSubscribeOn<T> extends Observable<T> {
     final Scheduler scheduler;
 
     ObservableSubscribeOn(Observable<T> parent, Scheduler scheduler) {
+        super(parent.getDisposables());
         this.parent = parent;
         this.scheduler = scheduler;
     }

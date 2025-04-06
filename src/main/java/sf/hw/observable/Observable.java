@@ -5,15 +5,17 @@ import sf.hw.observer.Observer;
 import sf.hw.observer.StandardDisposable;
 import sf.hw.scheduler.Scheduler;
 
-
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 
 public abstract class Observable<T> {
-    protected static Map<Observer<?>, Disposable> disposableMap = new ConcurrentHashMap<>();
+    private final Map<Observer<?>, Disposable> disposableMap;
+
+    protected Observable(Map<Observer<?>, Disposable> disposableMap) {
+        this.disposableMap = disposableMap;
+    }
 
 
     public static <T> Observable<T> create(Emitting<T> source) {
@@ -64,7 +66,7 @@ public abstract class Observable<T> {
 
     }
 
-    public static Map<Observer<?>, Disposable> getDisposables() {
+    public Map<Observer<?>, Disposable> getDisposables() {
         return disposableMap;
     }
 

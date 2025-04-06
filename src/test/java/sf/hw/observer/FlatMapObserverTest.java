@@ -3,21 +3,18 @@ package sf.hw.observer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
 import org.mockito.Mockito;
 import sf.hw.observable.Observable;
-import sf.hw.observable.ObservableStandard;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.doAnswer;
 
 public class FlatMapObserverTest extends AbstractObserverTest {
     private final int COUNT_ON_NEXT = 3;
@@ -35,7 +32,7 @@ public class FlatMapObserverTest extends AbstractObserverTest {
 
     @BeforeEach
     void childSetup() {
-        testObserver = new FlatMapObserver<>(disposable, downstream, MAPPER, Observable.getDisposables());
+        testObserver = new FlatMapObserver<>(disposable, downstream, MAPPER, new ConcurrentHashMap<>());
     }
 
     @Test
@@ -68,7 +65,7 @@ public class FlatMapObserverTest extends AbstractObserverTest {
         Function<Integer, Observable<Integer>> failingMapper = i -> {
             throw error;
         };
-        testObserver = new FlatMapObserver<>(disposable, downstream, failingMapper, Observable.getDisposables());
+        testObserver = new FlatMapObserver<>(disposable, downstream, failingMapper, new ConcurrentHashMap<>());
 
         // Act
         testObserver.onNext(1);
@@ -106,7 +103,7 @@ public class FlatMapObserverTest extends AbstractObserverTest {
                     emitter.onNext(i);
                     emitter.onNext(i + 1);
                 }),
-                Observable.getDisposables()
+                new ConcurrentHashMap<>()
         );
 
         // Act
@@ -129,7 +126,7 @@ public class FlatMapObserverTest extends AbstractObserverTest {
                     return observable;
                 };
 
-        testObserver = new FlatMapObserver<>(disposable, downstream, emptyMapper, Observable.getDisposables());
+        testObserver = new FlatMapObserver<>(disposable, downstream, emptyMapper, new ConcurrentHashMap<>());
 
         // Act
         testObserver.onNext(1);

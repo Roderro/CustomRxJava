@@ -12,6 +12,7 @@ class ObservableMap<T, R> extends Observable<R> {
 
 
     public ObservableMap(Observable<T> parent, Function<? super T, ? extends R> mapper) {
+        super(parent.getDisposables());
         this.parent = parent;
         this.mapper = mapper;
     }

@@ -1,6 +1,5 @@
 package sf.hw.observable;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,10 +40,7 @@ abstract class AbstractObservableTest {
         testObservable = getTestObservable();
     }
 
-    @AfterEach
-    void afterEach() {
-        Observable.disposableMap.clear();
-    }
+
 
     abstract Class<? extends Observer> getExpectedWrapperClass();
 
@@ -177,9 +173,9 @@ abstract class AbstractObservableTest {
 
         testObservable.subscribe(observer1);
         testObservable.subscribe(observer2);
-        assertTrue(Observable.disposableMap.size() >= 2);
+        assertTrue(testObservable.getDisposables().size() >= 2);
         testObservable.unsubscribe(observer1);
         testObservable.unsubscribe(observer2);
-        assertTrue(Observable.disposableMap.isEmpty());
+        assertTrue(testObservable.getDisposables().isEmpty());
     }
 }
