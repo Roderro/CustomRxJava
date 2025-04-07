@@ -492,6 +492,9 @@ public class ObservableIT {
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertEquals(6, results.size());
         assertTrue(results.containsAll(List.of("A10", "B10", "A20", "B20", "A30", "B30")));
+
+        //Чтобы поток на котором запушена observeOn успел очистить ресурсы
+        Thread.sleep(10);
         // Проверка корректности очистки ресурсов
         assertTrue(observable.getDisposables().isEmpty(),
                 "Cleaning resources after the unsubscribing was not successful");
