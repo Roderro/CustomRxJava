@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-public class FlatMapObserverTest extends AbstractObserverTest {
+class FlatMapObserverTest extends AbstractObserverTest {
     private final int COUNT_ON_NEXT = 3;
     private final Function<Integer, Observable<Integer>> MAPPER = val -> {
         Observable<Integer> observable = Mockito.mock(Observable.class);

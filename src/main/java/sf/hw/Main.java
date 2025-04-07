@@ -20,16 +20,16 @@ public class Main {
             @Override
             public void onError(Throwable t) {
                 System.out.println(t.getMessage());
-                observable.unsubscribe(this);
             }
 
             @Override
             public void onComplete() {
+                //Смотри подписки
+                System.out.println(observable.getDisposables().size());
                 System.out.println("Completed");
-                observable.unsubscribe(this);
             }
         });
-        // Когда подписка больше не нужна:
+        // Проверка автоматическую отписку
         System.out.println(observable.getDisposables().size());
     }
 }

@@ -8,7 +8,7 @@ import java.util.function.Predicate;
 
 import static org.mockito.Mockito.*;
 
-public class FilterObserverTest extends AbstractObserverTest {
+class FilterObserverTest extends AbstractObserverTest {
     private final Predicate<Integer> FILTER = x -> x % 2 == 0;
 
     @BeforeEach

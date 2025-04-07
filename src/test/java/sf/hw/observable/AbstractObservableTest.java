@@ -41,7 +41,6 @@ abstract class AbstractObservableTest {
     }
 
 
-
     abstract Class<? extends Observer> getExpectedWrapperClass();
 
     abstract Observable<String> getTestObservable();
@@ -114,11 +113,9 @@ abstract class AbstractObservableTest {
 
 
     @Test
-    @DisplayName("Отписка удаляет Observer из disposableMap")
+    @DisplayName("Вызов onComplete описывает Observer из disposableMap")
     void unsubscribe_shouldRemoveObserver() {
         testObservable.subscribe(observer);
-        assertNotNull(testObservable.getDisposable(observer));
-        testObservable.unsubscribe(observer);
         assertNull(testObservable.getDisposable(observer));
     }
 
@@ -166,11 +163,15 @@ abstract class AbstractObservableTest {
     }
 
     @Test
-    @DisplayName("Удаление всех Observer при отписке")
+    @DisplayName("Удаление всех Observer при отписке,если не были вызваны onComplete, onError")
     void delAllObservers_shouldRemoveAllObserversWithGivenDisposable() {
         Observer<String> observer1 = getTestObserver();
         Observer<String> observer2 = getTestObserver();
-
+        emittingSource = (observer -> {
+            observer.onNext("Hello");
+            observer.onNext("World");
+        });
+        testObservable = getTestObservable();
         testObservable.subscribe(observer1);
         testObservable.subscribe(observer2);
         assertTrue(testObservable.getDisposables().size() >= 2);

@@ -7,9 +7,6 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 import sf.hw.scheduler.Scheduler;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 

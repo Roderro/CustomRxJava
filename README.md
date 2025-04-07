@@ -19,6 +19,8 @@
 - **`flatMap`**: Преобразует элементы в новые потоки и объединяет их в один.
 - **`subscribeOn`**: Указывает, в каком потоке выполнять подписку.
 - **`observeOn`**: Указывает, в каком потоке получать данные.
+- **`subscribe`**: Подписывает `Observer` на данный `Observable`.
+- **`unsubscribe`**: Отписывает `Observer` от данного `Observable`.
 
 ### Реализации Observable:
 
@@ -28,7 +30,7 @@
 
 ### Реализации Observer:
 
-- **`StandardObserver`**: Базовая реализация Observer.
+- **`AutoUnsubscribeObserver`**: Обертки над Observer с автоматической отпиской при `onComplete()`, `onError()`.
 - **`MapObserver`**, **`FilterObserver`**, **`FlatMapObserver`**: Обертки для обработки операторов.
 - **`ObserveOnObserver`**: Реализация для асинхронной доставки событий.
 
@@ -53,10 +55,10 @@
 
 **`SchedulerTreadFactory`**:
 
-- создает демон-потоки
-- Устанавливает потокам имена(`ComputationScheduler` - "Computationscheduler-worker-threadNumber",
-  `IOThreadScheduler` - "IO-scheduler-worker-threadNumber", `SingleThreadScheduler` - "
-  SingleThread-scheduler-worker-threadNumber" )
+- Создает демон-потоки
+- Устанавливает потокам имена(`ComputationScheduler` - "Computations-scheduler-worker-{threadNumber}",
+  `IOThreadScheduler` - "IO-scheduler-worker-{threadNumber}", `SingleThreadScheduler` - "
+  SingleThread-scheduler-worker-{threadNumber}" )
 
 ### Типы Schedulers:
 
@@ -120,7 +122,7 @@
 
 ## ⚠️ Важное предупреждение
 
-**Важно отписывать неиспользуемые Observer от Observable** для избежания утечек памяти!
+**Важно вызывать `onComplete()`, `onError()` в `Observable` или отписывать неиспользуемые `Observer` от `Observable`** для избежания утечек памяти!
 
 ### Почему это критично:
 
@@ -129,14 +131,34 @@
 - 📈 Могут привести к постепенному росту потребления памяти
 
 ### Как правильно:
-
+### Вариант 1 (без вызова `onComplete()`, `onError()` в emitter:
 ```java
+Emitting<String> emitter = observer -> {
+  observer.onNext("Hello");
+  observer.onNext("World");
+  };
 // При создание Observable сохраняем на него ссылку
 Observable<String> observable = Observable.create(emitter);
 // При создание Observer сохраняем на него ссылку
 Observer<String> observer = new Observer<>();
+// Подписка observer на observable
+observable.subscribe(observer);
 // Когда Observer больше не нужен
 observable.unsubscribe(observer);
+```
+### Вариант 2 (вызываем `onComplete()` или `onError()` в emitter:
+```java
+Emitting<String> emitter = observer -> {
+  observer.onNext("Hello");
+  observer.onNext("World");
+  observer.onComplete();
+  };
+// При создание Observable сохраняем на него ссылку
+Observable<String> observable = Observable.create(emitter);
+// При создание Observer сохраняем на него ссылку
+Observer<String> observer = new Observer<>();
+// Подписка observer на observable(автоматически отпишется при вызове onComplete())
+observable.subscribe(observer);
 ```
 
 ### Создание Observable и observer подписка и отписка:
@@ -163,39 +185,8 @@ Observer<String> observer = new Observer<>() {
         System.out.println("Completed");
     }
 };
-// Подписка observer на observable
+// Подписка observer на observable(автоматически отпишется при вызове onComplete())
 observable.subscribe(observer);
-// Когда подписка больше не нужна:
-observable.unsubscribe(observer);
-```
-
-### Создание observer c автоматической отпиской от Observable при onError, onComplete:
-
-```java
-Observable<String> observable = Observable.create(emitter -> {
-    emitter.onNext("Hello");
-    emitter.onNext("World");
-    emitter.onComplete();
-});
-observable.subscribe(new Observer<>() {
-  @Override
-  public void onNext(String item) {
-    System.out.println(item);
-  }
-  
-  @Override
-  public void onError(Throwable t) {
-    System.out.println(t.getMessage());
-    observable.unsubscribe(this);
-  }
-  
-  @Override
-  public void onComplete() {
-    System.out.println("Completed");
-    observable.unsubscribe(this);
-  }
-});
-
 ```
 
 ### Цепочка операторов:
@@ -224,10 +215,8 @@ Observer<String> observer = new Observer<>() {
         System.out.println("Completed");
     }
 };
-// Подписка observer на observable
+// Подписка observer на observable(автоматически отпишется при вызове onComplete())
 observable.subscribe(observer);
-// Когда подписка больше не нужна:
-observable.unsubscribe(observer);
 ```
 
 ### Многопоточность:
@@ -258,11 +247,9 @@ Observer<String> observer = new Observer<>() {
         System.out.println("Completed");
     }
 };
-// Подписка observer на observable
+// Подписка observer на observable(автоматически отпишется при вызове onComplete())
 observable.subscribe(observer);
 Thread.sleep(500);
-// Когда подписка больше не нужна:
-observable.unsubscribe(observer);
 ```
 
 ### FlatMap:
@@ -298,11 +285,9 @@ Observer<String> observer = new Observer<>() {
         System.out.println("Completed");
     }
 };
-// Подписка observer на observable
+// Подписка observer на observable(автоматически отпишется при вызове onComplete())
 observable.subscribe(observer);
 Thread.sleep(500);
-// Когда подписка больше не нужна:
-observable.unsubscribe(observer);
 ```
 
 # Заключение
@@ -321,13 +306,16 @@ observable.unsubscribe(observer);
     - `observeOn` - задает поток для получения данных
 - ✅ **Механизм отписки observer от observable**:
     - Функция `unsubscribe()` у `Observable`
-    - Автоматическая очистка ресурсов
+    - Автоматическая отписка `Observer` от `Observable` при вызове `onComplete()` или `onError()` в `emitter`
 
 ## Ключевые рекомендации по использованию
 
 ### Управление ресурсами
 
-🔹 **Всегда сохраняйте ссылку на observable и observer** для возможности отписаться и освободить ресурсы:
+🔹 **Вызывайте `onComplete()` или `onError()` в `emitter` для автоматической отписки**
+
+🔹 **Для возможности отписаться в нужный момент сохраняйте ссылку на observable и observer** для возможности отписаться и освободить ресурсы:
+
 
 ```java
 // Подписка observer на observable

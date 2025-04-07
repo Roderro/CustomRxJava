@@ -33,6 +33,12 @@ public class ObservableIT {
         observer.onNext(30);
         observer.onComplete();
     };
+    Emitting<Integer> emitterWithoutComplete = observer -> {
+        observer.onNext(10);
+        observer.onNext(20);
+        observer.onNext(30);
+    };
+
 
 
     private Observable<Integer> getSaveNameThreadObservable(List<String> namesThreads, CountDownLatch latch) {
@@ -104,7 +110,6 @@ public class ObservableIT {
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertEquals(List.of(10, 20, 30), receivedItems);
         // Проверка корректности очистки ресурсов
-        observable.unsubscribe(observer);
         assertTrue(observable.getDisposables().isEmpty(),
                 "Cleaning resources after the unsubscribing was not successful");
     }
@@ -142,7 +147,6 @@ public class ObservableIT {
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertEquals(List.of("Value-20", "Value-30"), results);
         // Проверка корректности очистки ресурсов
-        observable.unsubscribe(observer);
         assertTrue(observable.getDisposables().isEmpty(),
                 "Cleaning resources after the unsubscribing was not successful");
     }
@@ -170,7 +174,6 @@ public class ObservableIT {
                         .filter(name -> name.startsWith("IO")).count(),
                 "Expected more than 1 different threads");
         // Проверка корректности очистки ресурсов
-        observable.unsubscribe(observer);
         assertTrue(observable.getDisposables().isEmpty(),
                 "Cleaning resources after the unsubscribing was not successful");
     }
@@ -202,7 +205,6 @@ public class ObservableIT {
                         .filter(name -> name.startsWith("SingleThread")).count(),
                 "The stage is made in the wrong thread");
         // Проверка корректности очистки ресурсов
-        observable.unsubscribe(observer);
         assertTrue(observable.getDisposables().isEmpty(),
                 "Cleaning resources after the unsubscribing was not successful");
     }
@@ -235,7 +237,6 @@ public class ObservableIT {
                         .filter(name -> name.startsWith("Computation")).count(),
                 "The stage is made in the wrong thread");
         // Проверка корректности очистки ресурсов
-        observable.unsubscribe(observer);
         assertTrue(observable.getDisposables().isEmpty(),
                 "Cleaning resources after the unsubscribing was not successful");
     }
@@ -246,7 +247,7 @@ public class ObservableIT {
         // Arrange
         List<Integer> receivedItems = new ArrayList<>();
         CountDownLatch latch = new CountDownLatch(1);
-        Observable<Integer> observable = Observable.create(emitter);
+        Observable<Integer> observable = Observable.create(emitterWithoutComplete);
         Observer<Integer> observer = new Observer<>() {
             @Override
             public void onNext(Integer item) {
@@ -288,7 +289,7 @@ public class ObservableIT {
         // Arrange
         List<Integer> receivedItems = new ArrayList<>();
         CountDownLatch latch = new CountDownLatch(1);
-        Observable<Integer> observable = Observable.create(emitter)
+        Observable<Integer> observable = Observable.create(emitterWithoutComplete)
                 .flatMap(val -> Observable.create(emitter -> {
                     emitter.onNext(val);
                     emitter.onNext(val + 5);
@@ -366,7 +367,6 @@ public class ObservableIT {
         assertEquals(List.of(1), receivedItems);
 
         // Проверка корректности очистки ресурсов
-        observable.unsubscribe(observer);
         assertTrue(observable.getDisposables().isEmpty(),
                 "Cleaning resources after the unsubscribing was not successful");
     }
@@ -408,7 +408,6 @@ public class ObservableIT {
         assertEquals(6, results.size());
         assertTrue(results.containsAll(List.of("A10", "B10", "A20", "B20", "A30", "B30")));
         // Проверка корректности очистки ресурсов
-        observable.unsubscribe(observer);
         assertTrue(observable.getDisposables().isEmpty(),
                 "Cleaning resources after the unsubscribing was not successful");
     }
@@ -451,7 +450,7 @@ public class ObservableIT {
         assertEquals(6, results.size());
         assertTrue(results.containsAll(List.of("A10", "B10", "A20", "B20", "A30", "B30")));
         // Проверка корректности очистки ресурсов
-        observable.unsubscribe(observer);
+        //             observable.unsubscribe(observer);
         assertTrue(observable.getDisposables().isEmpty(),
                 "Cleaning resources after the unsubscribing was not successful");
     }
@@ -494,7 +493,6 @@ public class ObservableIT {
         assertEquals(6, results.size());
         assertTrue(results.containsAll(List.of("A10", "B10", "A20", "B20", "A30", "B30")));
         // Проверка корректности очистки ресурсов
-        observable.unsubscribe(observer);
         assertTrue(observable.getDisposables().isEmpty(),
                 "Cleaning resources after the unsubscribing was not successful");
     }
@@ -541,7 +539,6 @@ public class ObservableIT {
         assertEquals(testError, receivedError.get(), "Должна быть получена тестовая ошибка");
 
         // Проверка корректности очистки ресурсов
-        observable.unsubscribe(testObserver);
         assertTrue(observable.getDisposables().isEmpty(),
                 "Cleaning resources after the unsubscribing was not successful");
     }
@@ -580,8 +577,6 @@ public class ObservableIT {
         assertEquals(List.of(10, 20, 30, 10, 20, 30), receivedItems);
 
         // Проверка корректности очистки ресурсов
-        observable.unsubscribe(observer);
-        observable2.unsubscribe(observer);
         assertTrue(observable.getDisposables().isEmpty(),
                 "Cleaning resources after the unsubscribing was not successful");
         assertTrue(observable2.getDisposables().isEmpty(),
@@ -637,8 +632,6 @@ public class ObservableIT {
         assertEquals(List.of(10, 20, 30, 11, 21, 31), receivedItems);
 
         // Проверка корректности очистки ресурсов
-        observable.unsubscribe(observer1);
-        observable.unsubscribe(observer2);
         assertTrue(observable.getDisposables().isEmpty(),
                 "Cleaning resources after the unsubscribing was not successful");
     }

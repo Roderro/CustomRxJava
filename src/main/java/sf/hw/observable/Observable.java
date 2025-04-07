@@ -1,5 +1,6 @@
 package sf.hw.observable;
 
+import sf.hw.observer.AutoUnsubscribeObserver;
 import sf.hw.observer.Disposable;
 import sf.hw.observer.Observer;
 import sf.hw.observer.StandardDisposable;
@@ -42,11 +43,16 @@ public abstract class Observable<T> {
     }
 
     public void subscribe(Observer<? super T> observer) {
-        if (!disposableMap.containsKey(observer)) {
-            Disposable disposable = new StandardDisposable();
+        Observer<? super T> returnObserver = observer;
+        Disposable disposable = disposableMap.get(observer);
+        if (disposable == null) {
+            disposable = new StandardDisposable();
             chainDisposable(disposable, observer);
+            Observer<T> autoUnsubscribeObserver = new AutoUnsubscribeObserver<>(disposable, observer, this);
+            chainDisposable(disposable, autoUnsubscribeObserver);
+            returnObserver = autoUnsubscribeObserver;
         }
-        subscribeActual(observer);
+        subscribeActual(returnObserver);
     }
 
 
